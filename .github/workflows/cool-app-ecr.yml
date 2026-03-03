@@ -5,19 +5,26 @@ on:
     branches:
       - main
     paths:
-      - "cool-app/**"
+      - "cool-app/backend/server.js"
+      - "cool-app/backend/Dockerfile"
+      - "cool-app/frontend/vite.config.js"
+      - "cool-app/frontend/index.html"
+      - "cool-app/frontend/Dockerfile" 
+      - "cool-app/frontend/src/main.jsx"
+      - "cool-app/frontend/src/App.jsx" 
+      - "cool-app/frontend/src/styles.css"
       - ".github/workflows/cool-app-ecr.yml"
   workflow_dispatch:
 
 permissions:
   id-token: write
-  contents: read
+  contents: write
 
 env:
-  AWS_REGION: ap-south-1
-  ROLE_TO_ASSUME: arn:aws:iam::793524670633:role/Terraform-deployer-role
-  ECR_BACKEND_REPO: backend_repo
-  ECR_FRONTEND_REPO: frontend_repo
+  AWS_REGION: ${{ vars.AWS_REGION }}
+  ROLE_TO_ASSUME: ${{ vars.ROLE_TO_ASSUME }}
+  ECR_BACKEND_REPO: ${{ vars.ECR_BACKEND_REPO }}
+  ECR_FRONTEND_REPO: ${{ vars.ECR_FRONTEND_REPO }}
 
 jobs:
   build-and-push:
@@ -48,10 +55,15 @@ jobs:
         with:
           role-to-assume: ${{ env.ROLE_TO_ASSUME }}
           aws-region: ${{ env.AWS_REGION }}
+      
+      # - name: Login to Amazon ECR
+      #   id: login-ecr
+      #   uses: aws-actions/amazon-ecr-login@v2
 
       - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
+        run: |
+          aws ecr get-login-password --region ${{ env.AWS_REGION }} | \
+          docker login --username AWS --password-stdin ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
 
       - name: Ensure ECR repositories exist
         shell: bash
@@ -62,27 +74,34 @@ jobs:
             aws ecr create-repository --repository-name "$repo" >/dev/null
           done
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
       - name: Build and push backend image
-        uses: docker/build-push-action@v6
-        with:
-          context: ./cool-app/backend
-          file: ./cool-app/backend/Dockerfile
-          push: true
-          tags: |
-            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_BACKEND_REPO }}:${{ github.sha }}
-            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_BACKEND_REPO }}:latest
+        run: |
+          docker build -t ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_BACKEND_REPO }}:${{ github.sha }} ./cool-app/backend
+          docker tag ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_BACKEND_REPO }}:${{ github.sha }} ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_BACKEND_REPO }}:latest
+          docker push ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_BACKEND_REPO }}:${{ github.sha }}
+          docker push ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_BACKEND_REPO }}:latest
 
       - name: Build and push frontend image
-        uses: docker/build-push-action@v6
-        with:
-          context: ./cool-app/frontend
-          file: ./cool-app/frontend/Dockerfile
-          push: true
-          tags: |
-            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_FRONTEND_REPO }}:${{ github.sha }}
-            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_FRONTEND_REPO }}:latest
+        run: |
+          docker build -t ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_FRONTEND_REPO }}:${{ github.sha }} ./cool-app/frontend
+          docker tag ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_FRONTEND_REPO }}:${{ github.sha }} ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_FRONTEND_REPO }}:latest
+          docker push ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_FRONTEND_REPO }}:${{ github.sha }}
+          docker push ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_FRONTEND_REPO }}:latest
+
+      - name: Update deployment manifests
+        run: |
+          # Update backend image (handles both with and without existing tags)
+          sed -i "s|image: ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_BACKEND_REPO }}.*|image: ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_BACKEND_REPO }}:${{ github.sha }}|g" deployment.yaml
+          
+          # Update frontend image (handles both with and without existing tags)
+          sed -i "s|image: ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_FRONTEND_REPO }}.*|image: ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_FRONTEND_REPO }}:${{ github.sha }}|g" deployment.yaml
+
+      - name: Commit and push updated manifests
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add deployment.yaml
+          git diff --staged --quiet || git commit -m "Update image tags to ${{ github.sha }}"
+          git push
 
 
