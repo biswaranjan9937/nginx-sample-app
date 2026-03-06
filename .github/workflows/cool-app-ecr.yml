@@ -26,6 +26,7 @@ env:
   ROLE_TO_ASSUME: ${{ vars.ROLE_TO_ASSUME }}
   ECR_BACKEND_REPO: ${{ vars.ECR_BACKEND_REPO }}
   ECR_FRONTEND_REPO: ${{ vars.ECR_FRONTEND_REPO }}
+  ZOHO_CLIQ_WEBHOOK: ${{ secrets.ZOHO_CLIQ_WEBHOOK }}
 
 jobs:
   build-and-push:
@@ -457,5 +458,14 @@ jobs:
           echo "🔗 Main Report: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/reports/${{ github.sha }}/"
           echo "🔗 Backend Report: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/reports/${{ github.sha }}/backend-report.html"
           echo "🔗 Frontend Report: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/reports/${{ github.sha }}/frontend-report.html"
+
+      # - name: Send report URLs to Zoho Cliq
+      #   if: env.ZOHO_CLIQ_WEBHOOK != ''
+      #   run: |
+      #     curl -X POST "${{ env.ZOHO_CLIQ_WEBHOOK }}" \
+      #       -H "Content-Type: application/json" \
+      #       -d '{
+      #         "text": "🛡️ **Trivy Security Reports Ready**\n\n📊 **Build:** `${{ github.sha }}`\n🏗️ **Repository:** ${{ github.repository }}\n\n📈 **Reports Available:**\n🔗 [Main Dashboard](https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/reports/${{ github.sha }}/)\n💻 [Backend Report](https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/reports/${{ github.sha }}/backend-report.html)\n🌐 [Frontend Report](https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/reports/${{ github.sha }}/frontend-report.html)\n\n✅ Click any link to view detailed security analysis"
+      #       }'
 
 
