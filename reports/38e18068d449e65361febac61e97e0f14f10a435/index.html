@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Trivy Security Reports - Build 38e18068d449e65361febac61e97e0f14f10a435</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .report-link { display: block; padding: 15px; margin: 10px 0; background: #f5f5f5; text-decoration: none; border-radius: 5px; }
+        .report-link:hover { background: #e5e5e5; }
+        .build-info { background: #e8f4fd; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Trivy Security Scan Reports</h1>
+        <div class="build-info">
+            <strong>Build:</strong> 38e18068d449e65361febac61e97e0f14f10a435<br>
+            <strong>Date:</strong> $(date)<br>
+            <strong>Repository:</strong> biswaranjan9937/nginx-sample-app
+        </div>
+        <h2>Available Reports:</h2>
+        <a href="backend-report.html" class="report-link">
+            <strong>Backend Image Security Report</strong><br>
+            <small>Vulnerability scan for backend Docker image</small>
+        </a>
+        <a href="frontend-report.html" class="report-link">
+            <strong>Frontend Image Security Report</strong><br>
+            <small>Vulnerability scan for frontend Docker image</small>
+        </a>
+    </div>
+</body>
+</html>
