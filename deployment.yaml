@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: backend
-        image: 793524670633.dkr.ecr.ap-south-1.amazonaws.com/backend_repo:339ad8a7b00824af24bb3d7dc153e14b900001a5
+        image: 793524670633.dkr.ecr.ap-south-1.amazonaws.com/backend_repo:530f7be6093faf80ed04ddc067e88e5038292a5f
         ports:
         - containerPort: 5000
 
@@ -35,6 +35,6 @@ spec:
     spec:
       containers:
       - name: nginx
-        image: 793524670633.dkr.ecr.ap-south-1.amazonaws.com/frontend_repo:339ad8a7b00824af24bb3d7dc153e14b900001a5
+        image: 793524670633.dkr.ecr.ap-south-1.amazonaws.com/frontend_repo:530f7be6093faf80ed04ddc067e88e5038292a5f
         ports:
         - containerPort: 80
