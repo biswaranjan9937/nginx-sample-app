@@ -228,7 +228,7 @@ jobs:
       - name: Deploy reports to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.TOKEN }}
           publish_dir: ./trivy-reports
           destination_dir: reports/${{ github.sha }}
 
