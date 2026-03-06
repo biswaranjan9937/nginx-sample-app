@@ -103,5 +103,6 @@ jobs:
           git add deployment.yaml
           git diff --staged --quiet || git commit -m "Update image tags to ${{ github.sha }}"
           git push
+          git status
 
 
